@@ -1,6 +1,6 @@
 import prisma from '@umami/prisma-client';
 import moment from 'moment-timezone';
-import { MYSQL, POSTGRESQL, getDatabaseType } from 'lib/db';
+import { MYSQL, POSTGRESQL, COCKROACHDB, getDatabaseType } from 'lib/db';
 import { getEventDataType } from './eventData';
 import { FILTER_COLUMNS } from './constants';
 
@@ -23,7 +23,7 @@ const POSTGRESQL_DATE_FORMATS = {
 function toUuid(): string {
   const db = getDatabaseType(process.env.DATABASE_URL);
 
-  if (db === POSTGRESQL) {
+  if (db === POSTGRESQL || db == COCKROACHDB) {
     return '::uuid';
   }
 
@@ -34,6 +34,13 @@ function toUuid(): string {
 
 function getDateQuery(field: string, unit: string, timezone?: string): string {
   const db = getDatabaseType(process.env.DATABASE_URL);
+
+  if (db == COCKROACHDB) {
+    if (timezone) {
+      return `to_char(date_trunc('${unit}', ${field} at time zone '${timezone}')::TIMESTAMP)`;
+    }
+    return `to_char(date_trunc('${unit}', ${field})::TIMESTAMP)`;
+  }
 
   if (db === POSTGRESQL) {
     if (timezone) {
@@ -56,7 +63,7 @@ function getDateQuery(field: string, unit: string, timezone?: string): string {
 function getTimestampInterval(field: string): string {
   const db = getDatabaseType(process.env.DATABASE_URL);
 
-  if (db === POSTGRESQL) {
+  if (db === POSTGRESQL || db === COCKROACHDB) {
     return `floor(extract(epoch from max(${field}) - min(${field})))`;
   }
 
@@ -141,7 +148,7 @@ function parseFilters(
 async function rawQuery(query: string, params: never[] = []): Promise<any> {
   const db = getDatabaseType(process.env.DATABASE_URL);
 
-  if (db !== POSTGRESQL && db !== MYSQL) {
+  if (db !== POSTGRESQL && db !== MYSQL && db !== COCKROACHDB) {
     return Promise.reject(new Error('Unknown database.'));
   }
 
