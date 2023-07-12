@@ -19,6 +19,7 @@ model User {
 
   website  Website[]
   teamUser TeamUser[]
+  report   Report[]
 
   @@map("user")
 }
@@ -39,6 +40,7 @@ model Session {
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
   websiteEvent WebsiteEvent[]
+  sessionData SessionData[]
 
   @@index([createdAt])
   @@index([websiteId])
@@ -59,6 +61,8 @@ model Website {
   user        User?         @relation(fields: [userId], references: [id])
   teamWebsite TeamWebsite[]
   eventData   EventData[]
+  report      Report[]
+  sessionData SessionData[]
 
   @@index([userId])
   @@index([createdAt])
@@ -92,14 +96,14 @@ model WebsiteEvent {
 }
 
 model EventData {
-  id                String    @id() @map("event_id") @db.Uuid
+  id                String    @id() @map("event_data_id") @db.Uuid
   websiteId         String    @map("website_id") @db.Uuid
   websiteEventId    String    @map("website_event_id") @db.Uuid
   eventKey          String    @map("event_key") @db.String(500)
-  eventStringValue  String?   @map("event_string_value") @db.String(500)
-  eventNumericValue Decimal?  @map("event_numeric_value") @db.Decimal(19, 4)
-  eventDateValue    DateTime? @map("event_date_value") @db.Timestamptz(6)
-  eventDataType     Int       @map("event_data_type") @db.Int4
+  stringValue       String?   @map("string_value") @db.String(500)
+  numberValue       Decimal?  @map("number_value") @db.Decimal(19, 4)
+  dateValue         DateTime? @map("date_value") @db.Timestamptz(6)
+  dataType          Int       @map("data_type") @db.Int4
   createdAt         DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
   website      Website      @relation(fields: [websiteId], references: [id])
@@ -109,6 +113,27 @@ model EventData {
   @@index([websiteId])
   @@index([websiteEventId])
   @@map("event_data")
+}
+
+model SessionData {
+  id           String    @id() @map("session_data_id") @db.Uuid
+  websiteId    String    @map("website_id") @db.Uuid
+  sessionId    String    @map("session_id") @db.Uuid
+  sessionKey   String    @map("session_key") @db.String(500)
+  stringValue  String?   @map("string_value") @db.String(500)
+  numberValue  Decimal?  @map("number_value") @db.Decimal(19, 4)
+  dateValue    DateTime? @map("date_value") @db.Timestamptz(6)
+  dataType     Int       @map("data_type") @db.Int4
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @default(now()) @map("deleted_at") @db.Timestamptz(6)
+
+  website Website @relation(fields: [websiteId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+  
+  @@index([createdAt])
+  @@index([websiteId])
+  @@index([sessionId])
+  @@map("session_data")
 }
 
 model Team {
@@ -153,4 +178,25 @@ model TeamWebsite {
   @@index([teamId])
   @@index([websiteId])
   @@map("team_website")
+}
+
+model Report {
+  id          String    @id() @unique() @map("report_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  websiteId   String    @map("website_id") @db.Uuid
+  type        String    @map("type") @db.String(200)
+  name        String    @map("name") @db.String(200)
+  description String    @map("description") @db.String(500)
+  parameters  String    @map("parameters") @db.String(6000)
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user    User    @relation(fields: [userId], references: [id])
+  website Website @relation(fields: [websiteId], references: [id])
+
+  @@index([userId])
+  @@index([websiteId])
+  @@index([type])
+  @@index([name])
+  @@map("report")
 }
