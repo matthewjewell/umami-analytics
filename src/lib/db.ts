@@ -22,26 +22,22 @@ export function getDatabaseType(url = process.env.DATABASE_URL) {
     return POSTGRESQL;
   }
 
-  if (process.env.CLICKHOUSE_URL) {
-    return CLICKHOUSE;
-  }
-
   return type;
 }
 
 export async function runQuery(queries: any) {
-  const db = getDatabaseType(process.env.CLICKHOUSE_URL || process.env.DATABASE_URL);
-
-  if (db === POSTGRESQL || db === MYSQL || db === COCKROACHDB) {
-    return queries[PRISMA]();
-  }
-
-  if (db === CLICKHOUSE) {
+  if (process.env.CLICKHOUSE_URL) {
     if (queries[KAFKA]) {
       return queries[KAFKA]();
     }
 
     return queries[CLICKHOUSE]();
+  }
+
+  const db = getDatabaseType();
+
+  if (db === POSTGRESQL || db === MYSQL || db === COCKROACHDB) {
+    return queries[PRISMA]();
   }
 }
 
