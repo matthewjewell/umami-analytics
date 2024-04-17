@@ -100,6 +100,13 @@ function getTimestampDiffQuery(field1: string, field2: string): string {
   }
 }
 
+function getSearchQuery(column: string): string {
+  const db = getDatabaseType();
+  const like = db === POSTGRESQL ? 'ilike' : 'like';
+
+  return `and ${column} ${like} {{search}}`;
+}
+
 function mapFilter(column: string, operator: string, name: string, type: string = '') {
   const db = getDatabaseType();
   const like = db === POSTGRESQL ? 'ilike' : 'like';
@@ -260,6 +267,7 @@ export default {
   getFilterQuery,
   getSearchParameters,
   getTimestampDiffQuery,
+  getSearchQuery,
   getQueryMode,
   pagedQuery,
   parseFilters,
