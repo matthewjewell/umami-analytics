@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import prisma from '@umami/prisma-client';
 import moment from 'moment-timezone';
-import { MYSQL, POSTGRESQL, getDatabaseType } from 'lib/db';
+import { MYSQL, POSTGRESQL, COCKROACHDB, getDatabaseType } from 'lib/db';
 import { SESSION_COLUMNS, OPERATORS, DEFAULT_PAGE_SIZE } from './constants';
 import { fetchWebsite } from './load';
 import { maxDate } from './date';
@@ -27,7 +27,7 @@ const POSTGRESQL_DATE_FORMATS = {
 function getAddIntervalQuery(field: string, interval: string): string {
   const db = getDatabaseType();
 
-  if (db === POSTGRESQL) {
+  if (db === POSTGRESQL || db === COCKROACHDB) {
     return `${field} + interval '${interval}'`;
   }
 
@@ -39,7 +39,7 @@ function getAddIntervalQuery(field: string, interval: string): string {
 function getDayDiffQuery(field1: string, field2: string): string {
   const db = getDatabaseType();
 
-  if (db === POSTGRESQL) {
+  if (db === POSTGRESQL || db === COCKROACHDB) {
     return `${field1}::date - ${field2}::date`;
   }
 
@@ -51,7 +51,7 @@ function getDayDiffQuery(field1: string, field2: string): string {
 function getCastColumnQuery(field: string, type: string): string {
   const db = getDatabaseType();
 
-  if (db === POSTGRESQL) {
+  if (db === POSTGRESQL || db === COCKROACHDB) {
     return `${field}::${type}`;
   }
 
@@ -62,6 +62,13 @@ function getCastColumnQuery(field: string, type: string): string {
 
 function getDateQuery(field: string, unit: string, timezone?: string): string {
   const db = getDatabaseType();
+
+  if (db == COCKROACHDB) {
+    if (timezone) {
+      return `to_char(date_trunc('${unit}', ${field} at time zone '${timezone}')::TIMESTAMP)`;
+    }
+    return `to_char(date_trunc('${unit}', ${field})::TIMESTAMP)`;
+  }
 
   if (db === POSTGRESQL) {
     if (timezone) {
@@ -84,7 +91,7 @@ function getDateQuery(field: string, unit: string, timezone?: string): string {
 function getTimestampDiffQuery(field1: string, field2: string): string {
   const db = getDatabaseType();
 
-  if (db === POSTGRESQL) {
+  if (db === POSTGRESQL || db === COCKROACHDB) {
     return `floor(extract(epoch from (${field2} - ${field1})))`;
   }
 
@@ -174,7 +181,7 @@ async function rawQuery(sql: string, data: object): Promise<any> {
   const db = getDatabaseType();
   const params = [];
 
-  if (db !== POSTGRESQL && db !== MYSQL) {
+  if (db !== POSTGRESQL && db !== MYSQL && db !== COCKROACHDB) {
     return Promise.reject(new Error('Unknown database.'));
   }
 
@@ -217,7 +224,7 @@ async function pagedQuery<T>(model: string, criteria: T, filters: PageParams) {
 function getQueryMode(): { mode?: Prisma.QueryMode } {
   const db = getDatabaseType();
 
-  if (db === POSTGRESQL) {
+  if (db === POSTGRESQL || db === COCKROACHDB) {
     return { mode: 'insensitive' };
   }
 

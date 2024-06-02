@@ -1,6 +1,7 @@
 export const PRISMA = 'prisma';
 export const POSTGRESQL = 'postgresql';
 export const MYSQL = 'mysql';
+export const COCKROACHDB = 'cockroachdb';
 export const CLICKHOUSE = 'clickhouse';
 export const KAFKA = 'kafka';
 export const KAFKA_PRODUCER = 'kafka-producer';
@@ -12,6 +13,10 @@ BigInt.prototype['toJSON'] = function () {
 
 export function getDatabaseType(url = process.env.DATABASE_URL) {
   const type = url && url.split(':')[0];
+
+  if (process.env.COCKROACH_DB) {
+    return COCKROACHDB;
+  }
 
   if (type === 'postgres') {
     return POSTGRESQL;
@@ -31,7 +36,7 @@ export async function runQuery(queries: any) {
 
   const db = getDatabaseType();
 
-  if (db === POSTGRESQL || db === MYSQL) {
+  if (db === POSTGRESQL || db === MYSQL || db === COCKROACHDB) {
     return queries[PRISMA]();
   }
 }
